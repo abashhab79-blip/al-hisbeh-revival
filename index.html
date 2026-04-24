@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reviving Al-Hisbeh — Hebron Old City</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Spectral:ital,wght@0,300;0,400;0,600;1,300&family=Noto+Naskh+Arabic:wght@400;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --sand: #d4b896;
+      --stone: #b5965c;
+      --deep-earth: #3d2a18;
+      --dust: #e8d9c0;
+      --terracotta: #c15c3a;
+      --olive: #6b7c4a;
+      --ink: #1a1209;
+      --fog: #f3ede3;
+      --border: rgba(90, 60, 20, 0.18);
+      --gold: #c9943a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--fog);
+      color: var(--ink);
+      font-family: 'Spectral', Georgia, serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      background: rgba(26, 18, 9, 0.92);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3rem;
+      height: 56px;
+      border-bottom: 1px solid rgba(201, 148, 58, 0.3);
+    }
+
+    .nav-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--dust);
+      text-decoration: none;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: 'Spectral', serif;
+      font-weight: 400;
+      opacity: 0.8;
+      transition: opacity 0.2s, color 0.2s;
+    }
+
+    .nav-links a:hover { opacity: 1; color: var(--gold); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      height: 100vh;
+      min-height: 650px;
+      display: flex;
+      align-items: flex-end;
+      padding: 0 6rem 8rem;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 60%, rgba(61,42,24,0.55) 0%, transparent 70%),
+        radial-gradient(ellipse at 80% 20%, rgba(107,124,74,0.15) 0%, transparent 60%),
+        linear-gradient(180deg, rgba(26,18,9,0.1) 0%, rgba(26,18,9,0.65) 100%);
+      z-index: 1;
+    }
+
+    .hero-map-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        url('https://tile.openstreetmap.org/15/18960/12604.png') center/cover,
+        var(--deep-earth);
+      filter: sepia(60%) contrast(0.9) brightness(0.7);
+      z-index: 0;
+    }
+
+    /* Use a Leaflet mini map as hero bg */
+    #hero-map {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      filter: sepia(50%) brightness(0.65) contrast(1.1);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 680px;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Spectral', serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.2rem;
+    }
+
+    .hero-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3rem, 7vw, 6rem);
+      font-weight: 300;
+      line-height: 1.05;
+      color: var(--fog);
+      margin-bottom: 0.4rem;
+    }
+
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .hero-subtitle {
+      font-size: 1.05rem;
+      color: rgba(232, 217, 192, 0.8);
+      max-width: 420px;
+      margin-top: 1.5rem;
+      font-weight: 300;
+      line-height: 1.8;
+    }
+
+    .hero-arabic {
+      font-family: 'Noto Naskh Arabic', serif;
+      font-size: 1.1rem;
+      color: rgba(201, 148, 58, 0.7);
+      margin-top: 1rem;
+      direction: rtl;
+    }
+
+    .scroll-cue {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: rgba(232, 217, 192, 0.5);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    .scroll-cue svg { opacity: 0.5; }
+
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(6px); }
+    }
+
+    /* ── SECTIONS ── */
+    section { padding: 7rem 6rem; }
+
+    .section-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      max-width: 120px;
+    }
+
+    h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 300;
+      line-height: 1.15;
+      color: var(--deep-earth);
+      margin-bottom: 2rem;
+    }
+
+    h2 em { font-style: italic; color: var(--terracotta); }
+
+    p { margin-bottom: 1.2rem; font-size: 1.02rem; max-width: 66ch; }
+
+    /* ── INTRO GRID ── */
+    .intro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: start;
+    }
+
+    .stat-block {
+      border-left: 2px solid var(--gold);
+      padding-left: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .stat-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3.5rem;
+      font-weight: 300;
+      color: var(--terracotta);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 0.3rem;
+    }
+
+    .quote-block {
+      background: var(--deep-earth);
+      color: var(--dust);
+      padding: 3rem;
+      position: relative;
+    }
+
+    .quote-block::before {
+      content: '"';
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 8rem;
+      color: var(--gold);
+      opacity: 0.2;
+      position: absolute;
+      top: -1rem;
+      left: 2rem;
+      line-height: 1;
+    }
+
+    .quote-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem;
+      font-style: italic;
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    .quote-source {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--stone);
+      margin-top: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── INTERACTIVE MAP SECTION ── */
+    #maps { background: var(--deep-earth); padding: 5rem 4rem; }
+
+    #maps h2 { color: var(--dust); }
+
+    #maps .section-label { color: var(--stone); }
+
+    .map-container-wrapper {
+      position: relative;
+      margin-top: 3rem;
+    }
+
+    .layer-controls {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 800;
+      background: rgba(26, 18, 9, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(201, 148, 58, 0.3);
+      padding: 1.2rem 1.5rem;
+      min-width: 220px;
+    }
+
+    .layer-controls h4 {
+      font-family: 'Spectral', serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+
+    .layer-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .layer-toggle input[type="checkbox"] { display: none; }
+
+    .toggle-swatch {
+      width: 20px;
+      height: 12px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      position: relative;
+      transition: opacity 0.2s;
+    }
+
+    .layer-toggle input:not(:checked) ~ .toggle-swatch { opacity: 0.35; }
+    .layer-toggle input:not(:checked) ~ .toggle-label { opacity: 0.4; }
+
+    .toggle-label {
+      font-size: 0.8rem;
+      color: var(--dust);
+      transition: opacity 0.2s;
+    }
+
+    #main-map {
+      width: 100%;
+      height: 560px;
+      border: 1px solid rgba(201,148,58,0.2);
+    }
+
+    .map-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      overflow-x: auto;
+    }
+
+    .map-tab {
+      background: rgba(26,18,9,0.6);
+      color: var(--dust);
+      border: 1px solid rgba(201,148,58,0.2);
+      border-bottom: none;
+      padding: 0.7rem 1.6rem;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'Spectral', serif;
+      transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
+    }
+
+    .map-tab.active {
+      background: rgba(201,148,58,0.15);
+      color: var(--gold);
+      border-color: var(--gold);
+    }
+
+    .map-tab:hover:not(.active) { background: rgba(201,148,58,0.08); }
+
+    .map-description {
+      background: rgba(26, 18, 9, 0.7);
+      border: 1px solid rgba(201,148,58,0.2);
+      border-top: none;
+      padding: 1rem 1.5rem;
+      font-size: 0.85rem;
+      color: rgba(232,217,192,0.75);
+      min-height: 48px;
+    }
+
+    /* ── TIMELINE ── */
+    #timeline { background: var(--fog); }
+
+    .timeline-track {
+      position: relative;
+      margin-top: 3rem;
+      padding-left: 2rem;
+    }
+
+    .timeline-track::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--stone) 10%, var(--stone) 90%, transparent);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-left: 2.5rem;
+      padding-bottom: 3rem;
+      cursor: pointer;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -0.45rem;
+      top: 0.3rem;
+      width: 10px;
+      height: 10px;
+      background: var(--sand);
+      border: 2px solid var(--stone);
+      border-radius: 50%;
+      transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    }
+
+    .timeline-item:hover .timeline-dot,
+    .timeline-item.active .timeline-dot {
+      background: var(--gold);
+      border-color: var(--terracotta);
+      transform: scale(1.4);
+    }
+
+    .timeline-year {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.85rem;
+      color: var(--terracotta);
+      letter-spacing: 0.15em;
+      margin-bottom: 0.3rem;
+    }
+
+    .timeline-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--deep-earth);
+      margin-bottom: 0.5rem;
+    }
+
+    .timeline-body {
+      font-size: 0.9rem;
+      color: rgba(26,18,9,0.65);
+      max-width: 48ch;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+
+    .timeline-item.active .timeline-body { max-height: 200px; }
+
+    /* ── SOLUTION ── */
+    #solution { background: #f0e8d5; }
+
+    .solution-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 2px;
+      margin-top: 3rem;
+    }
+
+    .solution-card {
+      background: var(--deep-earth);
+      color: var(--dust);
+      padding: 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s;
+    }
+
+    .solution-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold), var(--terracotta));
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .solution-card:hover { transform: translateY(-4px); }
+    .solution-card:hover::before { transform: scaleX(1); }
+
+    .card-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 4rem;
+      font-weight: 300;
+      color: rgba(201,148,58,0.15);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 0.8rem;
+    }
+
+    .card-body { font-size: 0.88rem; opacity: 0.75; line-height: 1.7; }
+
+    /* ── FINDINGS ── */
+    #findings { background: var(--fog); }
+
+    .findings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      margin-top: 3rem;
+      align-items: start;
+    }
+
+    .finding-item {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .finding-q {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--terracotta);
+      margin-bottom: 0.75rem;
+      font-style: italic;
+    }
+
+    .finding-a { font-size: 0.92rem; opacity: 0.8; line-height: 1.75; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink);
+      color: rgba(232,217,192,0.5);
+      padding: 4rem 6rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+
+    .footer-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+
+    .footer-note { font-size: 0.82rem; line-height: 1.8; }
+    .footer-arabic {
+      font-family: 'Noto Naskh Arabic', serif;
+      direction: rtl;
+      font-size: 1.1rem;
+      color: rgba(201,148,58,0.5);
+      margin-top: 1rem;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      section { padding: 5rem 2rem; }
+      nav { padding: 0 1.5rem; }
+      .hero { padding: 0 2rem 5rem; }
+      .nav-links { gap: 1.2rem; }
+      .intro-grid, .solution-grid, .findings-grid, footer { grid-template-columns: 1fr; gap: 2rem; }
+      #maps { padding: 4rem 1.5rem; }
+      .layer-controls { position: static; margin-bottom: 1rem; }
+    }
+
+    /* Leaflet popup custom */
+    .leaflet-popup-content-wrapper {
+      background: var(--deep-earth);
+      color: var(--dust);
+      border: 1px solid rgba(201,148,58,0.4);
+      border-radius: 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .leaflet-popup-tip { background: var(--deep-earth); }
+
+    .leaflet-popup-content {
+      font-family: 'Spectral', serif;
+      font-size: 0.88rem;
+      margin: 1rem 1.2rem;
+    }
+
+    .popup-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 0.4rem;
+    }
+
+    .popup-arabic {
+      font-family: 'Noto Naskh Arabic', serif;
+      direction: rtl;
+      font-size: 0.85rem;
+      color: rgba(201,148,58,0.6);
+      margin-bottom: 0.5rem;
+    }
+
+    .popup-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.5rem;
+      border: 1px solid rgba(201,148,58,0.3);
+      color: var(--stone);
+      margin-top: 0.5rem;
+    }
+
+    /* entrance animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Al-Hisbeh Revival</div>
+  <ul class="nav-links">
+    <li><a href="#intro">Context</a></li>
+    <li><a href="#maps">Maps</a></li>
+    <li><a href="#timeline">Timeline</a></li>
+    <li><a href="#solution">Proposal</a></li>
+    <li><a href="#findings">Findings</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="top">
+  <div id="hero-map"></div>
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Urban Rehabilitation · Hebron Old City · Palestine</p>
+    <h1 class="hero-title">Reviving<br><em>Al-Hisbeh</em></h1>
+    <p class="hero-subtitle">
+      Recreating the spatial and social functionality of Hebron's historic vegetable market — the living artery of the old city — closed since 2000.
+    </p>
+    <p class="hero-arabic">إحياء الحسبة — سوق الخضار التاريخي في مدينة الخليل القديمة</p>
+  </div>
+  <div class="scroll-cue">
+    <span>Scroll</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M8 4v16M2 14l6 6 6-6"/>
+    </svg>
+  </div>
+</section>
+
+<!-- INTRO -->
+<section id="intro">
+  <div class="section-label">01 — Context</div>
+  <div class="intro-grid">
+    <div class="fade-in">
+      <h2>The Market That Was<br><em>Hebron's Heartbeat</em></h2>
+      <p>
+        Al-Hisbeh (الحسبة) was once the most vibrant market and central meeting point in Hebron's old city. Farmers and agricultural workers travelled from across the governorate to sell their produce, while families, traders, and rural women came to buy seasonal vegetables.
+      </p>
+      <p>
+        More than a marketplace, it served as an open breathing space — rare in the densely packed urban fabric — and a daily hub connecting the old city to Hebron and its historic core.
+      </p>
+      <p>
+        Since its forced closure in 2000 by Israeli military order, the market has been seized, and its building announced for settlement expansion following October 2023. The surrounding souqs — Khan al-Shaheen and Souq al-Qazazin — struggle without their commercial anchor.
+      </p>
+
+      <div class="stat-block">
+        <div class="stat-number">2000</div>
+        <div class="stat-label">Year of forced closure</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number">200+</div>
+        <div class="stat-label">Shops closed by military order in the area</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-number">1967</div>
+        <div class="stat-label">Beginning of occupation of the West Bank</div>
+      </div>
+    </div>
+
+    <div class="fade-in">
+      <div class="quote-block">
+        <p class="quote-text">
+          "To this day, many people still remember the lively image of the Hisba market — the sounds of vendors calling out their goods created a distinctive and vibrant atmosphere for the town, its residents, and visitors."
+        </p>
+        <p class="quote-source">— Interview with Hebron Rehabilitation Committee</p>
+      </div>
+
+      <div style="margin-top: 2.5rem; padding: 2rem; border: 1px solid var(--border);">
+        <h3 style="font-family:'Cormorant Garamond',serif; font-size:1.3rem; margin-bottom:1rem; color:var(--deep-earth);">Key Sites</h3>
+        <ul style="list-style:none; font-size:0.9rem; line-height:2.2;">
+          <li>🏛 <strong>Al-Hisbeh Market</strong> — Produce market, closed 2000, now seized</li>
+          <li>🕌 <strong>Al-Ibrahimi Mosque</strong> — Anchor of the old city</li>
+          <li>🏪 <strong>Souq al-Qazazin</strong> — Glass merchants' market, adjacent</li>
+          <li>🏯 <strong>Khan al-Shaheen</strong> — Caravanserai, rehabilitated 2018</li>
+          <li>🛁 <strong>Hammam al-Na'im</strong> — Historic bathhouse, restored</li>
+          <li>🏫 <strong>Osama School</strong> — School seized, now a military post</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAPS -->
+<section id="maps">
+  <div class="section-label" style="color:var(--stone);">02 — Interactive Maps</div>
+  <h2 style="color:var(--dust);">Mapping <em>Loss & Resilience</em></h2>
+  <p style="color:rgba(232,217,192,0.7); max-width:60ch;">
+    The following maps reconstruct the layers of commercial activity, military closure, building occupancy, and the proposed intervention zones based on the project's GIS analysis.
+  </p>
+
+  <div style="margin-top:2rem;">
+    <!-- Tab switcher -->
+    <div class="map-tabs">
+      <button class="map-tab active" onclick="switchTab(0, this)">Overview</button>
+      <button class="map-tab" onclick="switchTab(1, this)">Commercial Activity</button>
+      <button class="map-tab" onclick="switchTab(2, this)">Closures</button>
+      <button class="map-tab" onclick="switchTab(3, this)">Buildings Occupancy</button>
+      <button class="map-tab" onclick="switchTab(4, this)">Proposed Intervention</button>
+    </div>
+
+    <div class="map-container-wrapper">
+      <div id="main-map"></div>
+
+      <!-- Layer controls -->
+      <div class="layer-controls" id="layer-panel">
+        <h4>Map Layers</h4>
+        <div id="layer-list"></div>
+      </div>
+    </div>
+
+    <div class="map-description" id="map-desc">
+      Overview of Hebron's Old City showing the key sites of Al-Hisbeh, Khan al-Shaheen, Souq al-Qazazin, and the Ibrahimi Mosque. Click any marker for details.
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="section-label">03 — Timeline</div>
+  <h2>A History of <em>Displacement</em></h2>
+  <div class="timeline-track">
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">Pre-1948</div>
+      <div class="timeline-title">Al-Hisbeh as Urban Artery</div>
+      <div class="timeline-body">The Hisbeh functioned as the main produce market of Hebron's old city, connecting farmers from across the governorate to craftsmen, vendors, and the Ibrahimi Mosque. The market and adjacent souqs formed the commercial backbone of the city.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">1948</div>
+      <div class="timeline-title">Nakba — The Catastrophe</div>
+      <div class="timeline-body">Mass displacement of Palestinian population. The 1951 Absentee Property Law prevented displaced Palestinians from returning to their properties, placing them under state control and opening them to privatization.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">1967</div>
+      <div class="timeline-title">Naksa — Israeli Occupation of West Bank</div>
+      <div class="timeline-body">Israeli military occupation of the West Bank and Gaza Strip begins. Hebron, including the old city and Al-Hisbeh, comes under military administration. Settlement activity in and around the old city begins.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">1993</div>
+      <div class="timeline-title">Oslo Accords — Bantustanization</div>
+      <div class="timeline-body">The Oslo Accords crystallize Palestinian territorial authority into disconnected enclaves — West Bank and Gaza only — marking the end of East Jerusalem as a Palestinian capital and beginning a new phase of urban displacement in Hebron.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">1997</div>
+      <div class="timeline-title">Hebron Protocol — Old City Division</div>
+      <div class="timeline-body">Hebron is divided into H1 (Palestinian Authority) and H2 (Israeli military control). The old city falls under H2, severely restricting Palestinian movement and commerce.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2000</div>
+      <div class="timeline-title">Al-Hisbeh Closure</div>
+      <div class="timeline-body">Al-Hisbeh market is forcibly closed by Israeli military order. Over 200 shops in the surrounding area are shuttered. The market's closure devastates the commercial and social life of the old city.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">2017–2018</div>
+      <div class="timeline-title">Rehabilitation Committee Interventions</div>
+      <div class="timeline-body">The Hebron Rehabilitation Committee rehabilitates Khan al-Shaheen market with UNESCO/SIDA funding, restores Hammam al-Na'im, and carries out infrastructure projects in adjacent neighborhoods. Adjacent housing units are restored and repopulated.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">Post-2023</div>
+      <div class="timeline-title">Escalation & Seizure</div>
+      <div class="timeline-body">Following October 7, 2023, Israeli occupation authorities announce the seizure of the Hisbeh building and expansion of settlement outposts. Restrictions and closures intensify. Shop owners and residents demonstrate resilience by maintaining their presence.</div>
+    </div>
+
+    <div class="timeline-item" onclick="toggleTimeline(this)">
+      <div class="timeline-dot"></div>
+      <div class="timeline-year">Present</div>
+      <div class="timeline-title">The Proposal — This Project</div>
+      <div class="timeline-body">This project proposes reviving the spatial functionality of Al-Hisbeh as a weekly produce market at the back entrance of the Hisbeh site, between Khan al-Shaheen and Souq al-Qazazin, with a merchant hostel near Hammam al-Na'im.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SOLUTION -->
+<section id="solution">
+  <div class="section-label">04 — Proposal</div>
+  <h2>Recreating the <em>Spatial Functionality</em></h2>
+  <p>
+    The project proposes three interconnected interventions to revive Al-Hisbeh's role as the commercial and social artery of Hebron's old city — without waiting for the building itself to be unlocked.
+  </p>
+
+  <div class="solution-grid">
+    <div class="solution-card fade-in">
+      <div class="card-number">01</div>
+      <div class="card-title">Weekly Produce Market</div>
+      <p class="card-body">A rotating weekly market at the back entrance of the Hisbeh site, in the passage between Khan al-Shaheen and the end of Souq al-Qazazin. Vendors from across the Hebron Governorate bring seasonal produce — recreating the market's role without occupying the seized building.</p>
+    </div>
+    <div class="solution-card fade-in">
+      <div class="card-number">02</div>
+      <div class="card-title">Merchants' Hostel</div>
+      <p class="card-body">Adaptation of the old guest house near Hammam al-Na'im into overnight accommodation for travelling traders. This directly addresses the barrier preventing farmers from distant villages from participating in market days — restoring the Hisbeh's historic role as a regional hub.</p>
+    </div>
+    <div class="solution-card fade-in">
+      <div class="card-number">03</div>
+      <div class="card-title">Souq al-Qazazin Integration</div>
+      <p class="card-body">Coordinated rehabilitation of Souq al-Qazazin to function in tandem with the market intervention, creating a continuous active zone from Khan al-Shaheen through the back entrance of the Hisbeh to the Ibrahimi Mosque — restoring the old city's historic commercial spine.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINDINGS -->
+<section id="findings">
+  <div class="section-label">05 — Field Findings</div>
+  <h2>Voices from the <em>Old City</em></h2>
+  <p>Interviews with residents, traders, and the Hebron Rehabilitation Committee reveal the depth of loss — and the resilience that persists.</p>
+
+  <div class="findings-grid">
+    <div>
+      <div class="finding-item fade-in">
+        <div class="finding-q">How did people use the Hisbeh?</div>
+        <div class="finding-a">The Hisbeh was one of the most vibrant markets in the region. Farmers and agricultural workers came from across the governorate to sell produce. Beyond the building, the site resembled an open market full of goods and constant movement — vegetables, secondhand clothing (bale), wholesale and retail trade, frequented by families and rural women selling seasonal goods.</div>
+      </div>
+      <div class="finding-item fade-in">
+        <div class="finding-q">What social role did it play beyond commerce?</div>
+        <div class="finding-a">The Hisbeh served as a gathering place for residents of the old city, the people of Hebron, and surrounding villages — a daily meeting hub and a central point connecting the city to its historic core. It also served as a rare open breathing space, with courtyards for displaying goods in the dense urban fabric.</div>
+      </div>
+      <div class="finding-item fade-in">
+        <div class="finding-q">What forms of everyday resilience exist today?</div>
+        <div class="finding-a">Shop owners have demonstrated resilience by maintaining their presence in surrounding markets despite closures. The steadfastness of residents in the area remains evident. The Hebron Rehabilitation Committee continues to restore adjacent housing and markets, maintaining Palestinian presence and activity within the old city.</div>
+      </div>
+    </div>
+    <div>
+      <div class="finding-item fade-in">
+        <div class="finding-q">What rehabilitation work has already happened?</div>
+        <div class="finding-a">The Hebron Rehabilitation Committee has restored all adjacent housing units and repopulated them, carried out infrastructure rehabilitation, restored Hammam al-Na'im, and opened institutional offices nearby. Khan al-Shaheen market was fully rehabilitated in 2018 with UNESCO and SIDA funding.</div>
+      </div>
+      <div class="finding-item fade-in">
+        <div class="finding-q">How has the situation changed post-October 2023?</div>
+        <div class="finding-a">Conditions have significantly deteriorated, with increased restrictions and closures. Occupation authorities have announced the seizure of the Hisbeh building and expansion of additional settlement outposts, making the preservation of Palestinian commercial presence in the area more urgent than ever.</div>
+      </div>
+      <div class="finding-item fade-in">
+        <div class="finding-q">What is the main research objective?</div>
+        <div class="finding-a">How can we recreate the spatial functionality of the Hisbeh market within larger rehabilitation plans for Hebron's old city? The answer lies in operating within accessible zones — the passageways and adjacent souqs — rather than requiring recovery of the seized building itself.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-title">Al-Hisbeh<br>Revival Project</div>
+    <p class="footer-note">
+      An urban planning study on recreating the spatial functionality of Hebron's historic produce market within the broader rehabilitation of the old city. Research conducted through field interviews, GIS mapping, and archival analysis.
+    </p>
+    <p class="footer-arabic">إحياء الحسبة — الخليل القديمة</p>
+  </div>
+  <div>
+    <p class="footer-note" style="margin-bottom:1rem;"><strong style="color:var(--stone); letter-spacing:0.1em; font-size:0.7rem; text-transform:uppercase;">Key Sources</strong></p>
+    <p class="footer-note">Hebron Rehabilitation Committee (لجنة إعمار الخليل)<br>
+    Visualizing Palestine — Heritage Under Threat<br>
+    UNESCO / SIDA — Khan Shaheen Rehabilitation 2018<br>
+    Field interviews, January 2025<br>
+    GIS Data — Palestine 1923 Grid
+    </p>
+    <p class="footer-note" style="margin-top:2rem; font-size:0.75rem; opacity:0.5;">
+      This project was developed as part of urban planning research on Palestinian heritage sites under military occupation.
+    </p>
+  </div>
+</footer>
+
+<script>
+// ─── MAP SETUP ───────────────────────────────────────────────────────────────
+
+// Hebron Old City coords
+const HEBRON_CENTER = [31.5264, 35.1101];
+const ZOOM = 16;
+
+// Hero map — simple background
+const heroMap = L.map('hero-map', {
+  center: HEBRON_CENTER,
+  zoom: 14,
+  zoomControl: false,
+  scrollWheelZoom: false,
+  dragging: false,
+  attributionControl: false
+});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(heroMap);
+
+// Main interactive map
+const map = L.map('main-map', {
+  center: HEBRON_CENTER,
+  zoom: ZOOM,
+  zoomControl: true,
+  attributionControl: true
+});
+
+// Base tiles
+const osmTile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19
+});
+
+const cartoTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© CartoDB',
+  maxZoom: 19
+});
+
+cartoTile.addTo(map);
+
+// ─── PLACE DATA ──────────────────────────────────────────────────────────────
+
+const places = {
+  hisbeh: {
+    coords: [31.5248, 35.1102],
+    name: 'Al-Hisbeh Market',
+    arabic: 'سوق الحسبة',
+    desc: 'Historic produce market, the commercial heart of Hebron\'s old city. Forcibly closed by Israeli military order in 2000. Building seized after October 2023.',
+    tag: 'Seized — Closed since 2000',
+    color: '#c15c3a',
+    status: 'seized'
+  },
+  ibrahimi: {
+    coords: [31.5247, 35.1138],
+    name: 'Al-Ibrahimi Mosque',
+    arabic: 'المسجد الإبراهيمي',
+    desc: 'One of the most significant religious sites in the Islamic world. Abraham\'s burial site. Partially seized and restricted since 1994.',
+    tag: 'Heritage — Restricted access',
+    color: '#6b7c4a',
+    status: 'heritage'
+  },
+  khan: {
+    coords: [31.5262, 35.1095],
+    name: 'Khan al-Shaheen',
+    arabic: 'خان الشاهين',
+    desc: 'Historic caravanserai adjacent to Al-Hisbeh. Rehabilitated in 2018 by the Hebron Rehabilitation Committee with UNESCO/SIDA funding. Key anchor for the proposed market intervention.',
+    tag: 'Rehabilitated 2018',
+    color: '#c9943a',
+    status: 'rehabilitated'
+  },
+  qazazin: {
+    coords: [31.5255, 35.1105],
+    name: 'Souq al-Qazazin',
+    arabic: 'سوق القزازين',
+    desc: 'The glass and ceramics merchants\' market, historically adjacent to Al-Hisbeh. Part of the proposed intervention corridor connecting Khan al-Shaheen to the Ibrahimi Mosque.',
+    tag: 'Intervention Zone',
+    color: '#b5965c',
+    status: 'active'
+  },
+  hammam: {
+    coords: [31.5258, 35.1088],
+    name: 'Hammam al-Na\'im',
+    arabic: 'حمام النعيم',
+    desc: 'Historic Ottoman bathhouse, restored by the Rehabilitation Committee. Proposed site for a merchants\' hostel to accommodate traders from outside Hebron visiting the weekly market.',
+    tag: 'Restored — Proposed hostel site',
+    color: '#9b7b6a',
+    status: 'restored'
+  },
+  osama: {
+    coords: [31.5291, 35.1085],
+    name: 'Osama bin Munqidh School',
+    arabic: 'مدرسة أسامة بن منقذ',
+    desc: 'Historic school seized by Israeli military authorities, now used as a military outpost. Part of the broader pattern of institutional displacement in the old city.',
+    tag: 'Seized — Military use',
+    color: '#8b3a2a',
+    status: 'seized'
+  }
+};
+
+// ─── LAYER DEFINITIONS ───────────────────────────────────────
+
+function makeIcon(color, size = 14) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width:${size}px;height:${size}px;
+      background:${color};
+      border:2px solid rgba(255,255,255,0.6);
+      border-radius:50%;
+      box-shadow:0 2px 8px rgba(0,0,0,0.5);
+    "></div>`,
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+}
+
+function makeMarker(placeKey) {
+  const p = places[placeKey];
+  const m = L.marker(p.coords, { icon: makeIcon(p.color) });
+  m.bindPopup(`
+    <div class="popup-title">${p.name}</div>
+    <div class="popup-arabic">${p.arabic}</div>
+    <div>${p.desc}</div>
+    <div class="popup-tag">${p.tag}</div>
+  `, { maxWidth: 260 });
+  return m;
+}
+
+// Layer groups
+const layerGroups = {
+  landmarks: L.layerGroup([
+    makeMarker('hisbeh'),
+    makeMarker('ibrahimi'),
+    makeMarker('khan'),
+    makeMarker('qazazin'),
+    makeMarker('hammam'),
+    makeMarker('osama')
+  ]),
+
+  closure: L.layerGroup([
+    // Military closure zone — approximate polygon
+    L.polygon([
+      [31.5240, 35.1080],
+      [31.5275, 35.1080],
+      [31.5275, 35.1130],
+      [31.5240, 35.1130]
+    ], {
+      color: '#3a6bc1',
+      fillColor: '#3a6bc1',
+      fillOpacity: 0.18,
+      weight: 2,
+      dashArray: '6 4'
+    }).bindPopup('<div class="popup-title">Military Closure Zone</div><div>Area subject to Israeli Military Order 3 — over 200 shops forcibly closed since 2000.</div>'),
+
+    // Hisbeh closure highlight
+    L.circle([31.5248, 35.1102], {
+      radius: 40,
+      color: '#c15c3a',
+      fillColor: '#c15c3a',
+      fillOpacity: 0.35,
+      weight: 2
+    }).bindPopup('<div class="popup-title">Al-Hisbeh Building</div><div>Seized and closed since 2000. Announced for settlement expansion post-2023.</div>')
+  ]),
+
+  commercial: L.layerGroup([
+    // Active commercial zone (green)
+    L.polyline([
+      [31.5262, 35.1095],
+      [31.5258, 35.1098],
+      [31.5255, 35.1105],
+      [31.5250, 35.1110],
+      [31.5248, 35.1122],
+      [31.5247, 35.1138]
+    ], {
+      color: '#6b7c4a',
+      weight: 5,
+      opacity: 0.8
+    }).bindPopup('<div class="popup-title">Active Commercial Spine</div><div>Historic route from Khan al-Shaheen through Souq al-Qazazin to the Ibrahimi Mosque — proposed intervention corridor.</div>'),
+
+    // Closed shops (red dots scattered)
+    ...[
+      [31.5252, 35.1096], [31.5255, 35.1098], [31.5258, 35.1100],
+      [31.5250, 35.1104], [31.5245, 35.1108], [31.5243, 35.1106],
+      [31.5260, 35.1092], [31.5263, 35.1098], [31.5265, 35.1103],
+      [31.5248, 35.1115], [31.5252, 35.1118]
+    ].map(coords => L.circleMarker(coords, {
+      radius: 5,
+      color: '#c15c3a',
+      fillColor: '#c15c3a',
+      fillOpacity: 0.7,
+      weight: 1
+    }).bindPopup('<div class="popup-title">Closed Shop</div><div>Shuttered by military order — typical of 200+ closures in the area.</div>'))
+  ]),
+
+  occupancy: L.layerGroup([
+    // Occupied buildings (orange/warm)
+    L.polygon([
+      [31.5270, 35.1090],
+      [31.5280, 35.1090],
+      [31.5280, 35.1110],
+      [31.5270, 35.1110]
+    ], {
+      color: '#c9943a', fillColor: '#c9943a', fillOpacity: 0.25, weight: 1.5
+    }).bindPopup('<div class="popup-title">Occupied / Active Zone</div><div>Partially or completely occupied buildings — residential and commercial.</div>'),
+
+    L.polygon([
+      [31.5245, 35.1100],
+      [31.5260, 35.1100],
+      [31.5260, 35.1125],
+      [31.5245, 35.1125]
+    ], {
+      color: '#c9943a', fillColor: '#c9943a', fillOpacity: 0.2, weight: 1.5
+    }),
+
+    // Abandoned (grey)
+    L.polygon([
+      [31.5235, 35.1090],
+      [31.5245, 35.1090],
+      [31.5245, 35.1108],
+      [31.5235, 35.1108]
+    ], {
+      color: '#999', fillColor: '#999', fillOpacity: 0.2, weight: 1.5
+    }).bindPopup('<div class="popup-title">Abandoned Buildings</div><div>Structures left empty as a result of military restrictions and displacement.</div>'),
+
+    // Israeli settlements (dark)
+    L.polygon([
+      [31.5295, 35.1078],
+      [31.5305, 35.1078],
+      [31.5305, 35.1090],
+      [31.5295, 35.1090]
+    ], {
+      color: '#333', fillColor: '#222', fillOpacity: 0.6, weight: 2
+    }).bindPopup('<div class="popup-title">Israeli Settlement</div><div>Settlement established within the old city under military protection.</div>')
+  ]),
+
+  proposal: L.layerGroup([
+    // Proposed market zone
+    L.polygon([
+      [31.5255, 35.1095],
+      [31.5265, 35.1095],
+      [31.5265, 35.1108],
+      [31.5255, 35.1108]
+    ], {
+      color: '#6b7c4a',
+      fillColor: '#6b7c4a',
+      fillOpacity: 0.35,
+      weight: 2,
+      dashArray: '8 4'
+    }).bindPopup('<div class="popup-title" style="color:#6b7c4a">Proposed Weekly Market Zone</div><div>Back entrance of the Hisbeh site — between Khan al-Shaheen and Souq al-Qazazin. Weekly produce market from the governorate.</div>'),
+
+    // Proposed hostel
+    L.circle([31.5258, 35.1088], {
+      radius: 30,
+      color: '#c9943a',
+      fillColor: '#c9943a',
+      fillOpacity: 0.4,
+      weight: 2
+    }).bindPopup('<div class="popup-title" style="color:#c9943a">Proposed Merchants\' Hostel</div><div>Conversion of old guest house near Hammam al-Na\'im into overnight accommodation for traders from outside Hebron.</div>'),
+
+    // Route arrows
+    L.polyline([
+      [31.5262, 35.1095],
+      [31.5260, 35.1100],
+      [31.5256, 35.1103],
+      [31.5252, 35.1110],
+      [31.5250, 35.1120],
+      [31.5247, 35.1138]
+    ], {
+      color: '#c9943a',
+      weight: 3,
+      opacity: 0.7,
+      dashArray: '10 6'
+    }).bindPopup('<div class="popup-title">Proposed Intervention Corridor</div><div>The revived commercial route from Khan al-Shaheen to the Ibrahimi Mosque, anchored by the weekly produce market.</div>')
+  ])
+};
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+
+const tabConfigs = [
+  {
+    name: 'Overview',
+    layers: ['landmarks'],
+    desc: 'Overview of Hebron\'s Old City showing the key sites of Al-Hisbeh, Khan al-Shaheen, Souq al-Qazazin, the Ibrahimi Mosque, Hammam al-Na\'im, and the seized Osama school. Click any marker for details.',
+    basemap: 'dark',
+    zoom: 16
+  },
+  {
+    name: 'Commercial Activity',
+    layers: ['landmarks', 'commercial'],
+    desc: 'Commercial activity map showing the historic market spine from Khan al-Shaheen through Souq al-Qazazin. Red dots indicate shops closed by Israeli Military Order — over 200 in this area alone.',
+    basemap: 'dark',
+    zoom: 16
+  },
+  {
+    name: 'Military Closures',
+    layers: ['landmarks', 'closure'],
+    desc: 'Military closure zone under Israeli Military Order 3. The blue polygon shows the area where over 200 shops were forcibly shut. The red highlight marks the Hisbeh building itself, now seized.',
+    basemap: 'dark',
+    zoom: 16
+  },
+  {
+    name: 'Buildings Occupancy',
+    layers: ['landmarks', 'occupancy'],
+    desc: 'Building occupancy status in the old city core. Orange: partially or completely occupied. Grey: abandoned due to restrictions. Dark: Israeli settlements established within the old city.',
+    basemap: 'osm',
+    zoom: 16
+  },
+  {
+    name: 'Proposed Intervention',
+    layers: ['landmarks', 'proposal'],
+    desc: 'The proposed spatial intervention: a weekly produce market at the Hisbeh back entrance (green), a merchants\' hostel near Hammam al-Na\'im (orange circle), and the rehabilitated commercial corridor to the Ibrahimi Mosque (dashed line).',
+    basemap: 'dark',
+    zoom: 16
+  }
+];
+
+let currentLayers = [];
+
+function clearMapLayers() {
+  currentLayers.forEach(l => map.removeLayer(l));
+  currentLayers = [];
+}
+
+function applyTab(idx) {
+  clearMapLayers();
+  const cfg = tabConfigs[idx];
+
+  // Switch basemap
+  if (cfg.basemap === 'osm') {
+    map.removeLayer(cartoTile);
+    osmTile.addTo(map);
+  } else {
+    map.removeLayer(osmTile);
+    cartoTile.addTo(map);
+  }
+
+  // Add layers
+  cfg.layers.forEach(key => {
+    layerGroups[key].addTo(map);
+    currentLayers.push(layerGroups[key]);
+  });
+
+  document.getElementById('map-desc').textContent = cfg.desc;
+
+  // Update layer controls
+  renderLayerControls(cfg.layers);
+}
+
+function switchTab(idx, btn) {
+  document.querySelectorAll('.map-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  applyTab(idx);
+}
+
+function renderLayerControls(activeLayers) {
+  const swatches = {
+    landmarks: { color: '#c9943a', label: 'Key Sites' },
+    commercial: { color: '#6b7c4a', label: 'Commercial Activity' },
+    closure: { color: '#3a6bc1', label: 'Military Closures' },
+    occupancy: { color: '#c9943a', label: 'Building Occupancy' },
+    proposal: { color: '#6b7c4a', label: 'Proposed Zones' }
+  };
+
+  const html = activeLayers.map(key => {
+    const s = swatches[key];
+    return `<label class="layer-toggle">
+      <input type="checkbox" checked onchange="toggleLayer('${key}', this)"/>
+      <div class="toggle-swatch" style="background:${s.color}"></div>
+      <span class="toggle-label">${s.label}</span>
+    </label>`;
+  }).join('');
+
+  document.getElementById('layer-list').innerHTML = html;
+}
+
+function toggleLayer(key, el) {
+  if (el.checked) {
+    layerGroups[key].addTo(map);
+  } else {
+    map.removeLayer(layerGroups[key]);
+  }
+}
+
+// Init first tab
+applyTab(0);
+
+// ─── TIMELINE TOGGLES ────────────────────────────────────────────────────────
+function toggleTimeline(el) {
+  const wasActive = el.classList.contains('active');
+  document.querySelectorAll('.timeline-item').forEach(i => i.classList.remove('active'));
+  if (!wasActive) el.classList.add('active');
+}
+
+// ─── SCROLL ANIMATIONS ───────────────────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.12 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
